@@ -1,0 +1,54 @@
+# Ambiente virtual
+.venv/
+venv/
+ENV/
+
+# Bytecode / caches Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+
+# Distribuição / build
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+
+# Instaladores / logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Testes / cobertura
+.tox/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+htmlcov/
+.pytest_cache/
+.hypothesis/
+
+# Ambientes / ferramentas
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+
+# Arquivos temporários e do SO
+*.tmp
+*.log
+*.swp
+*~
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Configurações locais / IDEs
+.env
+.env.*
+!.env.example
+.vscode/
+.idea/
+*.code-workspace
