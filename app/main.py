@@ -1,5 +1,10 @@
-from pokeapi import buscar_personagem
+from fastapi import FastAPI
 
-personagem = buscar_personagem("pikachu")
+from .pokeapi import buscar_personagem
 
-print(personagem)
+app = FastAPI(title="Pokedex API", description="API de personagens da franquia Pokémon.")
+
+
+@app.get("/personagens/{nome}")
+def personagem_por_nome(nome: str):
+    return buscar_personagem(nome)

@@ -1,6 +1,6 @@
 import requests
 
-from models import montar_personagem
+from .models import montar_personagem
 
 
 def buscar_personagem(nome):
