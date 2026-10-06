@@ -1,0 +1,12 @@
+# Render: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: pokedex-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    # O Render injeta a variável $PORT; o startCommand a utiliza.
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.6
