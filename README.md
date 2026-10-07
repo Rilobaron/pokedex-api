@@ -1,123 +1,228 @@
 # Pokédex
 
-> 🌐 **Demo em produção:** _cole aqui a URL do Render após o deploy_
+Aplicação web de Pokédex construída com **FastAPI** e **JavaScript puro**, consumindo a [PokéAPI](https://pokeapi.co). O backend funciona como camada intermediária que agrega, normaliza e cacheia os dados externos; o frontend entrega a experiência completa — Pokémon em destaque, stats visíveis, filtros, favoritos e detalhes — sem frameworks, sem build e com responsividade de ponta a ponta.
 
-Pokédex moderna e responsiva com dados da [PokéAPI](https://pokeapi.co). Backend em **FastAPI** que agrega e cacheia os dados, e frontend próprio (HTML + CSS + JS puro, sem build) servido pela própria API.
+## Demo
 
-> Projeto iniciado durante o **#7DaysOfCode** e evoluído até um estado funcional e apresentável para portfólio.
+`Deploy público: em breve` — o repositório já está preparado para o Render (Blueprint em `render.yaml`).
 
-## Screenshots
-
-| Desktop | Mobile | Detalhes |
+| Desktop | Detalhes | Mobile |
 |---|---|---|
-| ![Pokédex no desktop](docs/screenshot-desktop.png) | ![Pokédex no mobile](docs/screenshot-mobile.png) | ![Detalhes do Pokémon](docs/screenshot-detail.png) |
+| ![Pokédex no desktop](docs/screenshot-desktop.png) | ![Detalhes do Pokémon](docs/screenshot-detail.png) | ![Pokédex no mobile](docs/screenshot-mobile.png) |
 
 ## Funcionalidades
 
-- **Pokémon em destaque (hero)** com artwork grande, tipos, descrição, altura/peso e **stats base em barras visíveis sem abrir o modal** (desktop)
+- **Listagem paginada** com "Carregar mais" (24 por página)
+- **Busca por nome ou número** (ex.: `pikachu`, `25`) com debounce
+- **Filtro por tipo** na toolbar, com dots coloridos e scroll horizontal
+- **Ordenação** por número crescente/decrescente e nome A-Z/Z-A
+- **Pokémon em destaque (hero)** com artwork oficial, tipos, descrição, altura/peso e **6 stats em barras visíveis sem abrir o modal**
 - **Sidebar de navegação** (Explorar, Favoritos, Tipos) com total de espécies
-- **Catálogo com cards atmosféricos**: fundo influenciado pelo tipo, número fantasma e estado "em destaque"
-- **Busca por nome ou número** (ex: `pikachu`, `25`), com debounce
-- **Filtro por tipo** (fogo, água, grama, …) na toolbar, com dots coloridos
-- **Ordenação** por número crescente/decrescente e nome A-Z/Z-A (front-end sobre os carregados)
-- **Detalhes completos**: descrição, altura, peso, habilidades, stats base com barras, sprite shiny
-- **Cadeia evolutiva** clicável no modal (navega entre as evoluções)
-- **Favoritos** persistidos em `localStorage`, com filtro "somente favoritos"
-- **Carregar mais** (paginação) + deep-link `#/pokemon/25` (funciona após refresh)
-- **Skeleton loading**, empty states e erros tratados com retry
-- **Responsivo** (sidebar vira header no mobile) e acessível (foco visível, `aria`, `Esc` fecha o modal)
+- **Detalhes completos** em modal: descrição, altura e peso, habilidades, stats, sprite **shiny** (alternável) e **cadeia evolutiva clicável**
+- **Artwork oficial** com fallback automático de sprite
+- **Favoritos persistidos** em `localStorage`, com filtro "somente favoritos"
+- **Deep-link** direto (ex.: `#/pokemon/25`), funciona após refresh
+- **Estados de interface**: skeleton de loading, estado vazio e estado de erro com retry
+- **Resiliência na integração**: cache no backend, timeout e tratamento de indisponibilidade da PokéAPI
+- **Responsivo** (sidebar vira header no mobile; breakpoints em 768/1024/1199px)
+- **Acessibilidade básica**: foco visível, `aria` nos controles, `Esc` fecha o modal, `prefers-reduced-motion` respeitado
+- **Interface em português (PT-BR)**; descrição do Pokémon em português quando disponível, com fallback para inglês
 
-## Stack
+## Tecnologias
 
-- **Backend:** Python 3.12 · FastAPI · Uvicorn · Requests
-- **Frontend:** HTML + CSS + JavaScript puro (nenhum bundler, nenhuma dependência)
-- **Testes:** pytest + TestClient (`httpx`)
-- **Dados:** [PokéAPI](https://pokeapi.co/api/v2)
+### Backend
+- **Python 3.12** · **FastAPI** · **Uvicorn**
+- **Requests** (cliente HTTP real usado pelo projeto)
+- Modelagem com `dataclasses` (sem ORM, sem banco)
 
-## Arquitetura (resumo)
+### Frontend
+- **HTML5** · **CSS3** (design tokens, media queries, `color-mix`) · **JavaScript vanilla**
+- Nenhum bundler, framework ou etapa de build
+
+### Integração
+- **[PokéAPI](https://pokeapi.co/api/v2)**
+
+### Qualidade / Deploy
+- **pytest** + TestClient (**httpx**) — testes offline com HTTP mockado
+- **Render** (Blueprint) · **Docker**
+
+## Arquitetura
 
 ```text
-navegador ──► FastAPI (serve /static + /api/*) ──► PokéAPI
-                    │ cache em memória (TTL 1h)
-                    │ listagem com buscas paralelas (8 workers)
+navegador ──────► FastAPI ──────► pokeapi.py ──────► PokéAPI
+   ▲                │                 │
+   │                │                 ├─ cache em memória (TTL 1h)
+   │                │                 ├─ timeout de 10 s
+   │                │                 └─ buscas paralelas (8 workers)
+   └── static/ ◄────┘
+       + JSON
 ```
 
-```text
-pokedex-api/
-├── app/
-│   ├── main.py        # FastAPI: rotas /api/*, rota legada e frontend estático
-│   ├── pokeapi.py     # Cliente da PokéAPI (cache, timeout, erros, concorrência)
-│   └── models.py      # Modelo Personagem + montadores (resumo/detalhe)
-├── static/
-│   ├── index.html     # SPA da Pokédex
-│   ├── styles.css     # Design system dark, sidebar, hero, responsivo
-│   ├── app.js         # Hero/destaque, busca, filtros, ordenação, favoritos, modal, evolução
-│   └── favicon.svg
-├── tests/
-│   └── test_api.py    # Testes offline (HTTP mockado)
-├── Dockerfile         # Deploy alternativo em container
-├── render.yaml        # Blueprint do Render
-└── requirements.txt
-```
+- O **frontend estático é servido pelo próprio FastAPI** — deploy único, sem etapa de build.
+- O backend atua como **camada de abstração** da PokéAPI: agrega `/pokemon`, `/pokemon-species` e `/evolution-chain` em uma única resposta normalizada.
+- **Tratamento de erros**: `404` quando o Pokémon não existe, `502` quando a PokéAPI está indisponível; a cadeia evolutiva é opcional — se falhar, o detalhe continua funcionando sem ela.
+- **Cache**: TTL de 1 hora no servidor (limite de 500 entradas) reduz chamadas repetidas à API externa.
+- **Listagem paralela**: os detalhes da página são buscados com `ThreadPoolExecutor` (8 workers).
+- No frontend, um **`detailCache`** evita refazer requisições de Pokémon já visitados (hero, cards e modal compartilham o mesmo cache).
 
-## Endpoints principais
+## API
 
 | Rota | Descrição |
 |---|---|
 | `GET /` | Frontend da Pokédex |
-| `GET /api/pokemon?limit=24&offset=0&type=fire` | Lista paginada (com imagem e tipos); `type` filtra por tipo |
-| `GET /api/pokemon/{nome_ou_id}` | Detalhe: tipos, altura, peso, habilidades, stats, descrição, evoluções |
-| `GET /api/types` | Tipos disponíveis |
-| `GET /api/health` | Healthcheck (sem dependências externas — ideal p/ o Render) |
-| `GET /personagens/{nome}` | Rota legada do Dia 1 (mantida por compatibilidade) |
+| `GET /api/health` | Healthcheck (`{"status": "ok"}`), sem dependências externas |
+| `GET /api/types` | Tipos disponíveis (exclui `unknown` e `shadow`) |
+| `GET /api/pokemon` | Lista paginada com resumo dos Pokémon |
+| `GET /api/pokemon/{id_ou_nome}` | Detalhe completo de um Pokémon |
+| `GET /personagens/{nome}` | Rota legada do projeto original, mantida por compatibilidade |
 
-Documentação interativa local: `http://127.0.0.1:8000/docs`.
+**Parâmetros de `GET /api/pokemon`:**
 
-## Instalação
+| Parâmetro | Padrão | Observação |
+|---|---|---|
+| `limit` | `24` | Entre 1 e 60 |
+| `offset` | `0` | Deslocamento da página |
+| `type` | — | Filtra por tipo (ex.: `fire`) |
 
-```powershell
-# Windows
-py -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+Exemplo: `GET /api/pokemon?limit=24&offset=0&type=fire`
+
+Documentação interativa (Swagger): `http://127.0.0.1:8000/docs`
+
+### Exemplo de resposta
+
+`GET /api/pokemon/pikachu` (campos principais):
+
+```json
+{
+  "id": 25,
+  "nome": "pikachu",
+  "altura": 4,
+  "peso": 60,
+  "tipos": ["electric"],
+  "habilidades": ["static", "lightning-rod"],
+  "stats": [
+    { "nome": "hp", "valor": 35 },
+    { "nome": "attack", "valor": 55 },
+    { "nome": "defense", "valor": 40 },
+    { "nome": "special-attack", "valor": 50 },
+    { "nome": "special-defense", "valor": 50 },
+    { "nome": "speed", "valor": 90 }
+  ],
+  "experiencia_base": 112,
+  "imagem": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png",
+  "sprite_shiny": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/25.png",
+  "descricao": "When several of these POKéMON gather, their electricity could build and cause lightning storms.",
+  "evolucoes": [
+    { "id": 172, "nome": "pichu", "imagem": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/172.png" },
+    { "id": 25, "nome": "pikachu", "imagem": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png" },
+    { "id": 26, "nome": "raichu", "imagem": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/26.png" }
+  ]
+}
 ```
+
+> `altura` está em decímetros e `peso` em hectogramas (unidades brutas da PokéAPI); a conversão para m/kg é feita no frontend.
+
+## Como executar
 
 ```bash
+git clone https://github.com/Rilobaron/pokedex-api.git
+cd pokedex-api
+
+python -m venv .venv
+
+# Windows
+.venv\Scripts\activate
+
 # Linux / macOS
-python3 -m venv .venv
 source .venv/bin/activate
+
 pip install -r requirements.txt
-```
 
-## Execução
-
-```powershell
 uvicorn app.main:app --reload
-# abra http://127.0.0.1:8000
 ```
+
+Abra `http://127.0.0.1:8000`. Nenhuma variável de ambiente é necessária.
 
 ## Testes
 
-```powershell
+```bash
 pytest -q
-node --check static/app.js
 ```
 
-## Deploy no Render
+**8 testes automatizados**, todos offline (HTTP mockado), cobrindo: modelo, healthcheck, 404, listagem, rota legada e a cadeia evolutiva (linear, ramificada e inclusão no detalhe).
 
-1. Suba o repositório para o GitHub.
-2. No [dashboard do Render](https://dashboard.render.com), **New → Blueprint** e selecione o repositório (o `render.yaml` já configura build, start e healthcheck).
-3. Ou crie manualmente: **New → Web Service**, runtime **Python**, e use:
-   - **Build Command:** `pip install -r requirements.txt`
-   - **Start Command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-   - **Health Check Path:** `/api/health`
-4. Aguarde o deploy e copie a URL pública para a seção **Demo** no topo deste README.
+Checagem de sintaxe do JavaScript (opcional): `node --check static/app.js`
 
-**Variáveis de ambiente:** nenhuma obrigatória. O Render injeta `$PORT` automaticamente. `PYTHON_VERSION=3.12.6` já vai no `render.yaml`.
+## Deploy
+
+### Render
+
+O projeto inclui um **Blueprint** (`render.yaml`) que já configura tudo:
+
+- **Build:** `pip install -r requirements.txt`
+- **Start:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+- **Health check:** `/api/health`
+- **`PYTHON_VERSION`:** `3.12.6` (injetado pelo próprio blueprint)
+
+No [dashboard do Render](https://dashboard.render.com): **New → Blueprint** e selecione o repositório. Nenhuma variável de ambiente precisa ser criada manualmente — o Render injeta `$PORT`.
+
+### Docker
+
+Há também um `Dockerfile` (imagem `python:3.12-slim`):
+
+```bash
+docker build -t pokedex-api .
+docker run -p 8000:8000 pokedex-api
+```
+
+A aplicação fica disponível em `http://127.0.0.1:8000`.
+
+## Estrutura
+
+```text
+pokedex-api/
+├── app/
+│   ├── main.py          # Rotas /api/*, rota legada e frontend estático
+│   ├── pokeapi.py       # Cliente da PokéAPI: cache, timeout, erros, concorrência
+│   └── models.py        # Modelo de dados e montadores (resumo/detalhe)
+├── static/
+│   ├── index.html       # Layout: sidebar, hero, toolbar, grid, modal
+│   ├── styles.css       # Design system dark e responsivo
+│   ├── app.js           # Busca, filtros, favoritos, modal, evolução, deep-link
+│   └── favicon.svg
+├── tests/
+│   └── test_api.py      # Testes offline com HTTP mockado
+├── docs/                # Screenshots
+├── requirements.txt
+├── render.yaml          # Blueprint do Render
+├── Dockerfile
+└── README.md
+```
 
 ## Decisões técnicas
 
-- **Sem troca de stack**: o projeto era um backend FastAPI mínimo; ele foi evoluído em vez de reescrito, e o frontend em JS puro é servido pelo próprio FastAPI — deploy único, sem build.
-- **Proxy com cache**: o backend agrega PokéAPI (`/pokemon` + `/pokemon-species` + `/evolution-chain`) com cache em memória (TTL 1h) e buscas paralelas na listagem.
-- **Resiliência**: timeout de 10s, 404 mapeado para "não encontrado" e falhas da PokéAPI retornam 502 com mensagem amigável. A cadeia evolutiva é opcional: se falhar, o detalhe continua funcionando sem ela.
-- **Sem dependências novas no runtime**: só o que já existia (`fastapi`, `uvicorn`, `requests`); `httpx`/`pytest` entram apenas para testes.
+- **FastAPI como backend leve** — uma única aplicação serve API e frontend, sem infraestrutura extra.
+- **Frontend vanilla** — dependências mínimas e zero etapas de build; o deploy é um `pip install`.
+- **Backend como proxy da PokéAPI** — o navegador nunca fala com a API externa diretamente; isso centraliza cache, normalização e tratamento de erro.
+- **Resiliência** — timeout de 10 s, `404` para inexistente, `502` para indisponibilidade e cadeia evolutiva opcional.
+- **Cache TTL de 1 h** — reduz chamadas repetidas à PokéAPI em uma aplicação sem banco de dados.
+- **Rota legada preservada** — `GET /personagens/{nome}` mantém compatibilidade com a primeira versão do projeto.
+- **Responsividade sem framework** — media queries e design tokens em CSS puro.
+- **Escopo deliberado** — sem banco de dados e sem autenticação: as escolhas foram mantidas simples de propósito.
+
+## Origem
+
+O projeto nasceu como exercício do **#7DaysOfCode** (Alura), começando por um endpoint simples de consulta de Pokémon. A partir daí foi expandido até uma aplicação completa de portfólio: API estruturada, frontend próprio, testes, cache, tratamento de erros, cadeia evolutiva, favoritos, responsividade e preparação de deploy.
+
+## Próximos passos
+
+> Roadmap — nenhuma das itens abaixo é funcionalidade atual.
+
+- Comparação lado a lado de Pokémon (item "Comparar" já reservado na interface)
+- Suporte a PWA com modo offline
+- Internacionalização (PT-BR / EN)
+
+## Créditos
+
+- Dados fornecidos pela [PokéAPI](https://pokeapi.co).
+- Pokémon e nomes relacionados pertencem a Nintendo, Creatures Inc. e GAME FREAK inc.
