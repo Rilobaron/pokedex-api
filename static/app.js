@@ -81,10 +81,10 @@
   function skeletons(n = 8) {
     grid.innerHTML = Array.from({ length: n }, () =>
       `<div class="card skeleton" aria-hidden="true">
-        <div class="sk" style="height:14px;width:40%"></div>
-        <div class="sk" style="height:20px;width:70%;margin:8px 0"></div>
-        <div class="sk" style="height:120px;width:120px;border-radius:50%;margin:6px auto"></div>
-        <div class="sk" style="height:22px;width:80%"></div>
+        <div class="sk" style="height:14px;width:34%"></div>
+        <div class="sk" style="height:148px;width:148px;border-radius:50%;margin:14px auto 10px"></div>
+        <div class="sk" style="height:22px;width:64%;margin:0 auto 10px"></div>
+        <div class="sk" style="height:24px;width:82%;margin:0 auto"></div>
       </div>`
     ).join("");
   }
@@ -94,14 +94,15 @@
     return `<span class="type-badge" style="--c:${c}">${t}</span>`;
   }
 
-  function cardHTML(p) {
+  function cardHTML(p, delay = 0) {
     const c1 = TYPE_COLORS[p.tipos[0]] || "#475569";
     const isFav = favorites.has(p.id);
-    return `<article class="card" data-id="${p.id}" style="--t1:${c1}" tabindex="0" role="button" aria-label="Ver detalhes de ${p.nome}">
+    return `<article class="card" data-id="${p.id}" style="--t1:${c1};--d:${delay}ms" tabindex="0" role="button" aria-label="Ver detalhes de ${p.nome}">
+      <span class="card-ghost" aria-hidden="true">${pad3(p.id)}</span>
       <button class="fav-star${isFav ? " active" : ""}" data-fav="${p.id}" aria-label="${isFav ? "Remover" : "Favoritar"} ${p.nome}" aria-pressed="${isFav}" title="Favoritar">${isFav ? "★" : "☆"}</button>
-      <div class="card-num">${pad3(p.id)}</div>
+      <div class="card-top"><span class="card-num">${pad3(p.id)}</span></div>
+      <div class="card-art"><img class="card-img" loading="lazy" src="${p.imagem || ""}" alt="${p.nome}" onerror="this.style.visibility='hidden'"/></div>
       <div class="card-name">${p.nome}</div>
-      <img class="card-img" loading="lazy" src="${p.imagem || ""}" alt="${p.nome}" onerror="this.style.visibility='hidden'"/>
       <div class="card-types">${p.tipos.map(typeBadge).join("")}</div>
     </article>`;
   }
@@ -117,7 +118,7 @@
       return;
     }
     setStatus("grid");
-    grid.innerHTML = items.map(cardHTML).join("");
+    grid.innerHTML = items.map((p, i) => cardHTML(p, (i % 12) * 45)).join("");
     resultMeta.textContent = state.query
       ? `Resultado para “${state.query}”`
       : state.activeType
@@ -181,7 +182,7 @@
       filtersEl.innerHTML = all.map((t) =>
         t.nome === "todos"
           ? `<button class="chip" data-type="" aria-pressed="${!state.activeType}">Todos</button>`
-          : `<button class="chip" data-type="${t.nome}" aria-pressed="${state.activeType === t.nome}" style="--chip:${TYPE_COLORS[t.nome] || "#fff"}">${t.nome}</button>`
+          : `<button class="chip" data-type="${t.nome}" aria-pressed="${state.activeType === t.nome}" style="--chip:${TYPE_COLORS[t.nome] || "#fff"}"><span class="chip-dot" style="--dot:${TYPE_COLORS[t.nome] || "#94a3b8"}" aria-hidden="true"></span>${t.nome}</button>`
       ).join("");
     } catch { filtersEl.innerHTML = ""; }
   }
@@ -207,10 +208,11 @@
       const isCurrent = Number(e.id) === Number(atual);
       return `<button class="evo-btn${isCurrent ? " current" : ""}" data-evo="${e.id}"${isCurrent ? ' aria-current="true"' : ` aria-label="Ver ${e.nome}"`} title="${e.nome}">
         <img loading="lazy" src="${e.imagem}" alt="${e.nome}" onerror="this.style.visibility='hidden'"/>
+        <small>#${String(e.id).padStart(3, "0")}</small>
         <span>${e.nome}</span>
       </button>`;
-    }).join(`<span class="evo-arrow" aria-hidden="true">→</span>`);
-    return `<h3 style="margin:14px 0 6px">Evolução</h3><div class="evo-row">${steps}</div>`;
+    }).join(`<span class="evo-link" aria-hidden="true">→</span>`);
+    return `<h3>Evolução</h3><div class="evo-track">${steps}</div>`;
   }
 
   async function openDetail(id) {
@@ -228,26 +230,29 @@
       modal.style.setProperty("--t1", c1);
       const alturaM = (p.altura / 10).toFixed(1).replace(".", ",");
       const pesoKg = (p.peso / 10).toFixed(1).replace(".", ",");
+      const total = (p.stats || []).reduce((s, x) => s + (x.valor || 0), 0);
       modalBody.innerHTML = `
-        <div class="modal-head">
-          <img id="modalImg" src="${p.imagem}" alt="${p.nome}" />
-          <div>
-            <div class="modal-num">${pad3(p.id)}</div>
-            <h2 id="modalName">${p.nome}</h2>
-            <div class="card-types">${p.tipos.map(typeBadge).join("")}</div>
-            <button class="btn shiny-toggle" id="shinyBtn">✨ Ver shiny</button>
+      <div class="detail">
+        <section class="detail-hero" aria-label="Apresentação de ${p.nome}">
+          <div class="modal-num">${pad3(p.id)}</div>
+          <h2 id="modalName">${p.nome}</h2>
+          <div class="card-types">${p.tipos.map(typeBadge).join("")}</div>
+          <div class="detail-art"><img id="modalImg" src="${p.imagem}" alt="${p.nome}" /></div>
+          <button class="btn btn-ghost shiny-toggle" id="shinyBtn">✨ Ver shiny</button>
+        </section>
+        <section class="detail-info">
+          ${p.descricao ? `<p class="modal-desc">${p.descricao}</p>` : ""}
+          <div class="meta-grid">
+            <div class="meta"><small>Altura</small><strong>${alturaM} m</strong></div>
+            <div class="meta"><small>Peso</small><strong>${pesoKg} kg</strong></div>
+            <div class="meta"><small>Experiência base</small><strong>${p.experiencia_base ?? "—"}</strong></div>
+            <div class="meta"><small>Habilidades</small><strong>${p.habilidades.map(cap).join(", ") || "—"}</strong></div>
           </div>
-        </div>
-        ${p.descricao ? `<p class="modal-desc">${p.descricao}</p>` : ""}
-        <div class="meta-grid">
-          <div class="meta"><small>Altura</small><strong>${alturaM} m</strong></div>
-          <div class="meta"><small>Peso</small><strong>${pesoKg} kg</strong></div>
-          <div class="meta"><small>Exp. base</small><strong>${p.experiencia_base ?? "—"}</strong></div>
-          <div class="meta"><small>Habilidades</small><strong>${p.habilidades.map(cap).join(", ") || "—"}</strong></div>
-        </div>
-        <h3 style="margin:14px 0 6px">Stats base</h3>
-        ${(p.stats || []).map((s) => statBar(s.nome, s.valor)).join("")}
-        ${evoHTML(p.id, p.evolucoes)}`;
+          <h3>Stats base <span class="stat-total">Total ${total}</span></h3>
+          ${(p.stats || []).map((s) => statBar(s.nome, s.valor)).join("")}
+          ${evoHTML(p.id, p.evolucoes)}
+        </section>
+      </div>`;
       requestAnimationFrame(() =>
         modalBody.querySelectorAll(".stat-bar i").forEach((el) => { el.style.width = el.dataset.w + "%"; }));
       let shiny = false;
@@ -344,6 +349,7 @@
   function routeFromHash() {
     const m = location.hash.match(/#\/pokemon\/([\w-]+)/);
     if (m) openDetail(m[1]);
+    else if (!backdrop.hidden) closeDetail();
   }
 
   // init

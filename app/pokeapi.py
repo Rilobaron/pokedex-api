@@ -65,10 +65,11 @@ def _get_json(url):
 
 def _descricao_pt_ou_en(species_json) -> str | None:
     entradas = species_json.get("flavor_text_entries") or []
-    for idioma in ("pt", "es", "en"):
+    for idioma in ("pt", "en"):
         for item in entradas:
             if item.get("language", {}).get("name") == idioma:
-                texto = " ".join(item.get("flavor_text", "").split())
+                texto = (item.get("flavor_text", "") or "").replace("­", "").replace("\x0c", " ")
+                texto = " ".join(texto.split())
                 if texto:
                     return texto
     return None
