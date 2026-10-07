@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -83,3 +83,17 @@ if STATIC_DIR.exists():
     @app.get("/", include_in_schema=False)
     def index():
         return FileResponse(str(STATIC_DIR / "index.html"))
+
+    @app.middleware("http")
+    async def _frontend_sem_cache_obsoleto(request: Request, call_next):
+        """Revalidação obrigatória de HTML/CSS/JS (ETag -> 304).
+
+        Sem Cache-Control, o navegador aplica cache heurístico e pode servir
+        um index.html antigo junto com app.js/styles.css novos. Nesse estado
+        misto, o JS novo aborta em IDs que não existem no HTML antigo
+        (TypeError em app.js:463/#sortSelect) e a UI inteira deixa de montar.
+        """
+        response = await call_next(request)
+        if request.url.path == "/" or request.url.path.startswith("/static/"):
+            response.headers["Cache-Control"] = "no-cache"
+        return response
