@@ -8,23 +8,24 @@ Pokédex moderna e responsiva com dados da [PokéAPI](https://pokeapi.co). Backe
 
 ## Screenshots
 
-> Adicione as imagens em `docs/` com estes nomes para exibi-las aqui.
-
 | Desktop | Mobile | Detalhes |
 |---|---|---|
 | ![Pokédex no desktop](docs/screenshot-desktop.png) | ![Pokédex no mobile](docs/screenshot-mobile.png) | ![Detalhes do Pokémon](docs/screenshot-detail.png) |
 
 ## Funcionalidades
 
-- **Grade de Pokémon** com número, nome, imagem oficial e tipos
+- **Pokémon em destaque (hero)** com artwork grande, tipos, descrição, altura/peso e **stats base em barras visíveis sem abrir o modal** (desktop)
+- **Sidebar de navegação** (Explorar, Favoritos, Tipos) com total de espécies
+- **Catálogo com cards atmosféricos**: fundo influenciado pelo tipo, número fantasma e estado "em destaque"
 - **Busca por nome ou número** (ex: `pikachu`, `25`), com debounce
-- **Filtro por tipo** (fogo, água, grama, …)
+- **Filtro por tipo** (fogo, água, grama, …) na toolbar, com dots coloridos
+- **Ordenação** por número crescente/decrescente e nome A-Z/Z-A (front-end sobre os carregados)
 - **Detalhes completos**: descrição, altura, peso, habilidades, stats base com barras, sprite shiny
 - **Cadeia evolutiva** clicável no modal (navega entre as evoluções)
 - **Favoritos** persistidos em `localStorage`, com filtro "somente favoritos"
 - **Carregar mais** (paginação) + deep-link `#/pokemon/25` (funciona após refresh)
 - **Skeleton loading**, empty states e erros tratados com retry
-- **Responsivo** (desktop e mobile) e acessível (foco visível, `aria`, `Esc` fecha o modal)
+- **Responsivo** (sidebar vira header no mobile) e acessível (foco visível, `aria`, `Esc` fecha o modal)
 
 ## Stack
 
@@ -49,8 +50,8 @@ pokedex-api/
 │   └── models.py      # Modelo Personagem + montadores (resumo/detalhe)
 ├── static/
 │   ├── index.html     # SPA da Pokédex
-│   ├── styles.css     # Tema escuro moderno, responsivo
-│   ├── app.js         # Busca, filtros, favoritos, modal, evolução, paginação
+│   ├── styles.css     # Design system dark, sidebar, hero, responsivo
+│   ├── app.js         # Hero/destaque, busca, filtros, ordenação, favoritos, modal, evolução
 │   └── favicon.svg
 ├── tests/
 │   └── test_api.py    # Testes offline (HTTP mockado)

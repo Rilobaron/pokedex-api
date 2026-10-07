@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Pokédex moderna consumindo a PokéAPI — busque por nome ou número, filtre por tipo, veja stats e cadeia evolutiva, e favorite seus Pokémon." />
+  <meta name="description" content="Pokédex imersiva consumindo a PokéAPI — Pokémon em destaque com stats, busca, filtros por tipo, favoritos e cadeia evolutiva." />
   <meta name="theme-color" content="#070b14" />
   <meta property="og:title" content="Pokédex — Busque e explore Pokémon" />
-  <meta property="og:description" content="Busque, filtre por tipo, veja stats, evolução e favorite seus Pokémon. Dados da PokéAPI." />
+  <meta property="og:description" content="Pokémon em destaque com stats, busca, filtros, favoritos e evolução. Dados da PokéAPI." />
   <meta property="og:type" content="website" />
   <title>Pokédex — Busque e explore Pokémon</title>
   <link rel="preconnect" href="https://pokeapi.co" />
@@ -17,64 +17,139 @@
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
 </head>
 <body>
-  <header class="topbar">
-    <div class="topbar-inner">
+  <div class="app">
+
+    <!-- ===== Sidebar (desktop) ===== -->
+    <aside class="sidebar" aria-label="Navegação principal">
       <a class="brand" href="#" id="brandHome" aria-label="Pokédex — voltar ao início">
         <span class="brand-ball" aria-hidden="true"><span></span></span>
         <span class="brand-text">Pokédex<em>.</em></span>
       </a>
-      <div class="search-wrap">
-        <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
-        <input
-          id="searchInput"
-          type="search"
-          placeholder="Buscar Pokémon por nome ou número…"
-          autocomplete="off"
-          aria-label="Buscar Pokémon por nome ou número"
-        />
-        <button id="searchClear" class="search-clear" hidden aria-label="Limpar busca">✕</button>
+
+      <nav class="side-nav">
+        <button class="nav-item is-active" id="navExplore" aria-current="page">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polygon points="15.5,8.5 13.5,13.5 8.5,15.5 10.5,10.5" fill="currentColor" stroke="none"/></svg>
+          Explorar
+        </button>
+        <button class="nav-item" id="navFavs" aria-pressed="false">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polygon points="12,3.5 14.6,9 20.5,9.7 16.1,13.8 17.3,19.7 12,16.7 6.7,19.7 7.9,13.8 3.5,9.7 9.4,9"/></svg>
+          Favoritos
+          <span class="nav-badge fav-count">0</span>
+        </button>
+        <button class="nav-item" id="navTypes">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="7" r="3"/><circle cx="7" cy="17" r="3"/><circle cx="17" cy="17" r="3"/></svg>
+          Tipos
+        </button>
+        <button class="nav-item" id="navCompare" disabled aria-disabled="true" title="Em breve">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><line x1="5" y1="20" x2="5" y2="10"/><line x1="12" y1="20" x2="12" y2="5"/><line x1="19" y1="20" x2="19" y2="13"/></svg>
+          Comparar
+          <span class="nav-soon">em breve</span>
+        </button>
+      </nav>
+
+      <div class="side-info">
+        <small>Banco PokéAPI</small>
+        <strong id="totalInfo">—</strong>
+        <span>espécies disponíveis</span>
       </div>
-      <button id="favToggle" class="fav-toggle" aria-pressed="false" title="Mostrar apenas favoritos">
-        <span aria-hidden="true">★</span><span class="fav-label">Favoritos</span><span id="favCount" class="fav-count">0</span>
-      </button>
+    </aside>
+
+    <!-- ===== Conteúdo principal ===== -->
+    <div class="main">
+      <header class="topbar">
+        <a class="brand brand-mobile" href="#" id="brandHomeMobile" aria-label="Pokédex — voltar ao início">
+          <span class="brand-ball" aria-hidden="true"><span></span></span>
+          <span class="brand-text">Pokédex<em>.</em></span>
+        </a>
+        <div class="search-wrap">
+          <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+          <input
+            id="searchInput"
+            type="search"
+            placeholder="Buscar Pokémon por nome ou número..."
+            autocomplete="off"
+            aria-label="Buscar Pokémon por nome ou número"
+          />
+          <button id="searchClear" class="search-clear" hidden aria-label="Limpar busca">✕</button>
+        </div>
+        <button id="favToggle" class="fav-toggle fav-toggle-mobile" aria-pressed="false" aria-label="Mostrar apenas favoritos">
+          <span aria-hidden="true">★</span><span class="fav-count">0</span>
+        </button>
+      </header>
+
+      <main class="content">
+        <!-- Hero: Pokémon em destaque -->
+        <section class="hero loading" id="hero" aria-label="Pokémon em destaque">
+          <div class="hero-info">
+            <span class="hero-num" id="heroNum">#—</span>
+            <h1 class="hero-name" id="heroName">Carregando…</h1>
+            <div class="hero-types" id="heroTypes"></div>
+            <p class="hero-desc" id="heroDesc"></p>
+            <dl class="hero-meta">
+              <div><dt>Altura</dt><dd id="heroHeight">—</dd></div>
+              <div><dt>Peso</dt><dd id="heroWeight">—</dd></div>
+            </dl>
+            <div class="hero-actions">
+              <button class="btn btn-primary" id="heroDetails">Ver detalhes</button>
+              <button class="fav-star hero-fav" id="heroFav" aria-pressed="false" aria-label="Favoritar Pokémon em destaque" title="Favoritar">☆</button>
+            </div>
+          </div>
+
+          <div class="hero-art">
+            <span class="hero-glow" aria-hidden="true"></span>
+            <img id="heroImg" alt="" />
+          </div>
+
+          <div class="hero-stats panel" aria-label="Stats do Pokémon em destaque">
+            <div class="panel-head">
+              <h2>Stats base</h2>
+              <span class="stat-total" id="heroTotal">—</span>
+            </div>
+            <div id="heroStats"></div>
+            <button class="btn btn-ghost" id="moreInfo">Mais informações <span aria-hidden="true">→</span></button>
+          </div>
+        </section>
+
+        <!-- Toolbar: filtros + ordenação -->
+        <div class="toolbar">
+          <div class="filters" id="typeFilters" role="group" aria-label="Filtrar por tipo"></div>
+          <div class="toolbar-right">
+            <p class="result-meta" id="resultMeta" role="status" aria-live="polite"></p>
+            <select id="sortSelect" aria-label="Ordenar resultados">
+              <option value="id-asc">Número crescente</option>
+              <option value="id-desc">Número decrescente</option>
+              <option value="name-asc">Nome A-Z</option>
+              <option value="name-desc">Nome Z-A</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid" id="grid"></div>
+
+        <div class="state" id="emptyState" hidden>
+          <div class="state-art" aria-hidden="true"><span>◌</span></div>
+          <h2>Nenhum Pokémon encontrado</h2>
+          <p id="emptyText">Tente outro nome, número ou filtro.</p>
+          <button class="btn" id="emptyReset">Limpar busca e filtros</button>
+        </div>
+
+        <div class="state" id="errorState" hidden>
+          <div class="state-art state-art-error" aria-hidden="true"><span>!</span></div>
+          <h2>Conexão falhou</h2>
+          <p id="errorText">Não foi possível carregar os dados.</p>
+          <button class="btn" id="errorRetry">Tentar novamente</button>
+        </div>
+
+        <div class="load-more-wrap" id="loadMoreWrap" hidden>
+          <button class="btn btn-primary" id="loadMore">Carregar mais Pokémon</button>
+        </div>
+      </main>
+
+      <footer class="footer">
+        <p>Dados: <a href="https://pokeapi.co" target="_blank" rel="noopener">PokéAPI</a> · FastAPI + JavaScript puro</p>
+      </footer>
     </div>
-    <div class="filter-bar">
-      <span class="filter-label" aria-hidden="true">Tipo</span>
-      <div class="filters" id="typeFilters" role="group" aria-label="Filtrar por tipo"></div>
-    </div>
-  </header>
-
-  <main class="container">
-    <section class="hero" aria-label="Apresentação">
-      <p class="eyebrow">Enciclopédia Pokémon · dados da PokéAPI</p>
-      <h1>Qual Pokémon<br />você procura<span class="accent-dot">?</span></h1>
-    </section>
-
-    <p class="result-meta" id="resultMeta" role="status" aria-live="polite"></p>
-    <div class="grid" id="grid"></div>
-
-    <div class="state" id="emptyState" hidden>
-      <div class="state-art" aria-hidden="true"><span>◌</span></div>
-      <h2>Nenhum Pokémon encontrado</h2>
-      <p id="emptyText">Tente outro nome, número ou filtro.</p>
-      <button class="btn" id="emptyReset">Limpar busca e filtros</button>
-    </div>
-
-    <div class="state" id="errorState" hidden>
-      <div class="state-art state-art-error" aria-hidden="true"><span>!</span></div>
-      <h2>Conexão falhou</h2>
-      <p id="errorText">Não foi possível carregar os dados.</p>
-      <button class="btn" id="errorRetry">Tentar novamente</button>
-    </div>
-
-    <div class="load-more-wrap" id="loadMoreWrap" hidden>
-      <button class="btn btn-primary" id="loadMore">Carregar mais Pokémon</button>
-    </div>
-  </main>
-
-  <footer class="footer">
-    <p>Dados: <a href="https://pokeapi.co" target="_blank" rel="noopener">PokéAPI</a> · FastAPI + JavaScript puro</p>
-  </footer>
+  </div>
 
   <div class="modal-backdrop" id="modalBackdrop" hidden>
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalName" id="modal">
